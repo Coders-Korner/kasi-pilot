@@ -89,8 +89,8 @@ export default function AdminUsersPage() {
           ) : (
             <div className="divide-y">
               {data?.users.map((u) => (
-                <div key={u.id} className="flex flex-wrap items-center gap-3 p-4">
-                  <div className="min-w-[180px] flex-1">
+                <div key={u.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:flex-wrap sm:items-center">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium">{u.businessName || u.ownerName}</p>
                     <p className="text-xs text-muted-foreground">
                       {u.ownerName} · {u.phone}
@@ -101,14 +101,16 @@ export default function AdminUsersPage() {
                     <br />
                     joined {formatDate(u.createdAt)}
                   </div>
-                  <Badge variant="secondary" className="capitalize">
-                    {u.role}
-                  </Badge>
-                  <Badge variant={u.consentBank ? "success" : "secondary"}>
-                    {u.consentBank ? "bank-consented" : "no bank consent"}
-                  </Badge>
-                  <Badge variant={u.status === "active" ? "success" : "destructive"}>{u.status}</Badge>
-                  <div className="flex items-center gap-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge variant="secondary" className="capitalize">
+                      {u.role}
+                    </Badge>
+                    <Badge variant={u.consentBank ? "success" : "secondary"}>
+                      {u.consentBank ? "bank-consented" : "no bank consent"}
+                    </Badge>
+                    <Badge variant={u.status === "active" ? "success" : "destructive"}>{u.status}</Badge>
+                  </div>
+                  <div className="flex items-center gap-1 sm:ml-auto">
                     <Button
                       variant="outline"
                       size="sm"

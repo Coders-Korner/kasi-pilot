@@ -51,13 +51,13 @@ export default function AdminTicketsPage() {
         <div className="space-y-3">
           {tickets.map((t) => (
             <Card key={t.id}>
-              <CardContent className="flex flex-wrap items-start gap-3 p-4">
-                <div className="min-w-[220px] flex-1">
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:flex-wrap sm:items-start">
+                <div className="min-w-0 flex-1 sm:min-w-[220px]">
                   <p className="font-semibold">{t.subject}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{t.message}</p>
                   <p className="mt-1 text-xs text-muted-foreground">Opened {formatDate(t.createdAt)}</p>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-col gap-2 sm:items-end">
                   <div className="flex gap-2">
                     <Badge
                       variant={t.priority === "high" ? "destructive" : t.priority === "medium" ? "warning" : "secondary"}

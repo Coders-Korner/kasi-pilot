@@ -56,10 +56,13 @@ export function PortalShell({
     indigo: "bg-indigo-600",
     emerald: "bg-emerald-600",
   }[accent];
+  const activeItem = nav.find(
+    (item) => pathname === item.href || pathname.startsWith(item.href + "/")
+  );
 
   return (
     <div className="flex min-h-screen bg-muted/30">
-      <aside className="hidden w-60 shrink-0 flex-col border-r bg-background md:flex">
+      <aside className="hidden w-60 shrink-0 flex-col border-r bg-background lg:flex">
         <div className="flex items-center gap-2 border-b px-4 py-4">
           <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl text-white", accentClass)}>
             <span className="text-sm font-bold">TP</span>
@@ -99,19 +102,21 @@ export function PortalShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-3 border-b bg-background px-4 py-3 md:hidden">
-          <div className="flex items-center gap-2">
-            <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg text-white", accentClass)}>
+        <header className="flex items-center justify-between gap-3 border-b bg-background px-4 py-3 lg:hidden">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white", accentClass)}>
               <span className="text-xs font-bold">TP</span>
             </div>
-            <div>
-              <p className="text-sm font-bold leading-tight">{businessName}</p>
-              <p className="text-[11px] text-muted-foreground">{roleLabel}</p>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold leading-tight">{businessName}</p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {activeItem?.label ?? roleLabel}
+              </p>
             </div>
           </div>
           <LogoutButton />
         </header>
-        <div className="flex gap-1 overflow-x-auto border-b bg-background px-2 py-1.5 md:hidden">
+        <div className="no-scrollbar flex gap-1 overflow-x-auto border-b bg-background px-2 py-1.5 lg:hidden">
           {nav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
             const Icon = NAV_ICONS[item.href] ?? LayoutDashboard;
@@ -119,8 +124,9 @@ export function PortalShell({
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium",
+                  "flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium",
                   active ? "bg-accent text-accent-foreground" : "text-muted-foreground"
                 )}
               >
@@ -130,7 +136,9 @@ export function PortalShell({
             );
           })}
         </div>
-        <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
+        <main className="min-w-0 flex-1 p-4 lg:p-6">
+          <div className="mx-auto w-full max-w-7xl">{children}</div>
+        </main>
       </div>
     </div>
   );

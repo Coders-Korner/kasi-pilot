@@ -77,45 +77,55 @@ export default function BankPipelinePage() {
             <p className="text-sm text-muted-foreground">No traders have consented to bank sharing.</p>
           ) : (
             traders.map((t) => (
-              <div key={t.id} className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
-                <div className="min-w-[180px] flex-1">
-                  <p className="font-semibold">{t.businessName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {t.ownerName} · {t.location} · {t.yearsInBusiness ?? 0} yrs
-                  </p>
+              <div key={t.id} className="rounded-lg border p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{t.businessName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t.ownerName} · {t.location} · {t.yearsInBusiness ?? 0} yrs
+                    </p>
+                  </div>
+                  {t.assessment ? (
+                    <Badge
+                      className="shrink-0 capitalize"
+                      variant={
+                        t.assessment.decision === "approved"
+                          ? "success"
+                          : t.assessment.decision === "declined"
+                            ? "destructive"
+                            : "warning"
+                      }
+                    >
+                      {t.assessment.decision.replace("_", " ")}
+                    </Badge>
+                  ) : (
+                    <Button size="sm" className="shrink-0" onClick={() => setAssessing(t)}>
+                      <ClipboardCheck className="h-3.5 w-3.5" /> Assess
+                    </Button>
+                  )}
                 </div>
-                <div className="text-right text-sm">
-                  <p className="font-semibold">{formatZAR(t.avgMonthlyRevenue)}<span className="text-xs font-normal text-muted-foreground">/mo</span></p>
-                  <p className="text-xs text-muted-foreground">{t.transactions6mo} records</p>
+                <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
+                  <div>
+                    <p className="font-semibold">{formatZAR(t.avgMonthlyRevenue)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      avg /mo · {t.transactions6mo} records
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-semibold">{t.consistencyScore}%</p>
+                    <p className="text-xs text-muted-foreground">{t.consistencyLabel} consistency</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold">{formatZAR(t.stockValue)}</p>
+                    <p className="text-xs text-muted-foreground">{t.productCount} products</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold tabular-nums">{formatZAR(t.revenue6mo)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t.lastActiveAt ? `active ${timeAgo(t.lastActiveAt)}` : "no recent activity"}
+                    </p>
+                  </div>
                 </div>
-                <div className="w-28 text-right text-sm">
-                  <p className="font-semibold">{t.consistencyScore}%</p>
-                  <p className="text-xs text-muted-foreground">{t.consistencyLabel} consistency</p>
-                </div>
-                <div className="text-right text-sm">
-                  <p className="font-semibold">{formatZAR(t.stockValue)}</p>
-                  <p className="text-xs text-muted-foreground">{t.productCount} products</p>
-                </div>
-                {t.assessment ? (
-                  <Badge
-                    variant={
-                      t.assessment.decision === "approved"
-                        ? "success"
-                        : t.assessment.decision === "declined"
-                          ? "destructive"
-                          : "warning"
-                    }
-                  >
-                    {t.assessment.decision.replace("_", " ")}
-                  </Badge>
-                ) : (
-                  <Button size="sm" onClick={() => setAssessing(t)}>
-                    <ClipboardCheck className="h-3.5 w-3.5" /> Assess
-                  </Button>
-                )}
-                {t.lastActiveAt ? (
-                  <span className="text-xs text-muted-foreground">active {timeAgo(t.lastActiveAt)}</span>
-                ) : null}
               </div>
             ))
           )}

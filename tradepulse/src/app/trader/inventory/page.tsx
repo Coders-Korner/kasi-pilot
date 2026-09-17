@@ -117,12 +117,18 @@ export default function InventoryPage() {
                       {p.isLowStock ? `min ${p.minStockThreshold}` : "in stock"}
                     </p>
                   </div>
-                  <Button variant="ghost" size="iconSm" onClick={() => setEditing(p)}>
+                  <Button
+                    variant="ghost"
+                    size="iconSm"
+                    aria-label={`Edit ${p.name}`}
+                    onClick={() => setEditing(p)}
+                  >
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="iconSm"
+                    aria-label={`Delete ${p.name}`}
                     onClick={() => {
                       if (confirm(`Delete ${p.name}?`)) deleteMutation.mutate(p.id);
                     }}

@@ -21,7 +21,13 @@ export function LogoutButton({ full = false }: { full?: boolean }) {
   }
 
   return (
-    <Button variant="ghost" size={full ? "default" : "icon"} onClick={logout} disabled={loading}>
+    <Button
+      variant="ghost"
+      size={full ? "default" : "icon"}
+      aria-label={full ? undefined : "Log out"}
+      onClick={logout}
+      disabled={loading}
+    >
       <LogOut className="h-4 w-4" />
       {full ? "Log out" : null}
     </Button>

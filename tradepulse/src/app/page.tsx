@@ -107,6 +107,86 @@ export default async function LandingPage() {
         </p>
       </section>
 
+      <section className="mx-auto max-w-6xl px-5 pb-6">
+        <div className="grid items-center gap-10 rounded-3xl border bg-card/60 p-6 md:p-10 lg:grid-cols-2">
+          <div className="order-2 lg:order-1">
+            <h2 className="text-2xl font-bold md:text-3xl">See it happen in the chat.</h2>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              A normal sentence becomes a sale, stock update and record. No forms, no spreadsheets
+              and no training needed.
+            </p>
+            <ul className="mt-5 space-y-3 text-sm">
+              {[
+                "“Sold 4 kotas at R35 each” updates revenue and stock instantly",
+                "Ask anything in the chat — prices, low stock, best sellers",
+                "After a few months, the same records become a readiness passport",
+              ].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>{t}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="order-1 flex flex-col items-center gap-6 lg:order-2">
+            <div
+              role="img"
+              aria-label="Example TradePulse chat that turns a sale message into a recorded transaction"
+              className="w-full max-w-[300px] rounded-[2rem] border-4 border-foreground/10 bg-background p-3 shadow-xl"
+            >
+              <div className="flex items-center gap-2 border-b pb-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  TP
+                </div>
+                <div>
+                  <p className="text-xs font-semibold leading-tight">TradePulse assistant</p>
+                  <p className="text-[10px] text-muted-foreground">online</p>
+                </div>
+              </div>
+              <div className="chat-bg -mx-3 mt-2 space-y-2 px-3 py-4">
+                <div className="flex justify-end">
+                  <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-3 py-1.5 text-xs text-primary-foreground">
+                    Sold 4 kotas at R35 each
+                  </p>
+                </div>
+                <div className="flex justify-start">
+                  <p className="max-w-[85%] whitespace-pre-line rounded-2xl rounded-bl-sm bg-background px-3 py-1.5 text-xs shadow-sm">
+                    {"Sold 4 × Kota at R35,00 = R140,00 ✅\nStock on hand: 16."}
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-3 py-1.5 text-xs text-primary-foreground">
+                    Bought 12 bread at R12 each
+                  </p>
+                </div>
+                <div className="flex justify-start">
+                  <p className="max-w-[85%] whitespace-pre-line rounded-2xl rounded-bl-sm bg-background px-3 py-1.5 text-xs shadow-sm">
+                    {"Bought 12 × Bread at R12,00 = R144,00 ✅\nStock on hand: 27."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="w-full max-w-sm rounded-2xl border bg-background p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold">Readiness passport</p>
+                <Badge variant="success">Bankable</Badge>
+              </div>
+              <div className="mt-3 flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-4 border-primary/30 text-sm font-bold text-primary">
+                  86
+                </div>
+                <div className="min-w-0 text-xs text-muted-foreground">
+                  <p className="font-medium text-foreground">Consistency: strong</p>
+                  <p className="mt-0.5">6 months of records · R12 340 avg monthly revenue</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="mx-auto max-w-6xl px-5 py-12">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (

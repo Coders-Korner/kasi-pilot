@@ -231,6 +231,7 @@ export default function ChatPage() {
               variant={speech.listening ? "destructive" : "outline"}
               size="icon"
               type="button"
+              aria-label={speech.listening ? "Stop voice input" : "Start voice input"}
               onClick={() => {
                 if (!speech.supported) {
                   setText((t) => t || "Voice not supported on this browser — please type.");
@@ -250,6 +251,7 @@ export default function ChatPage() {
             <Button
               size="icon"
               type="button"
+              aria-label="Send message"
               onClick={() => {
                 if (speech.listening && speech.transcript) {
                   speech.stop();

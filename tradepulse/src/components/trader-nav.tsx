@@ -19,7 +19,7 @@ export function TraderNav() {
   const { pending } = useOffline();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur safe-bottom">
+    <nav className="z-30 shrink-0 border-t bg-background/95 backdrop-blur safe-bottom">
       <div className="mx-auto flex max-w-lg items-stretch justify-around">
         {NAV.map((item) => {
           const active = pathname.startsWith(item.href);
@@ -27,8 +27,9 @@ export function TraderNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors",
+                "relative flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium transition-colors",
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >

@@ -107,12 +107,12 @@ export default function DistributorOverviewPage() {
               <p className="text-sm text-muted-foreground">No stock-outs across your network.</p>
             ) : (
               reorderAlerts.map((a, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <div>
-                    <p className="font-medium">{a.productName}</p>
-                    <p className="text-xs text-muted-foreground">{a.traderName}</p>
+                <div key={i} className="flex items-center justify-between gap-2 text-sm">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{a.productName}</p>
+                    <p className="truncate text-xs text-muted-foreground">{a.traderName}</p>
                   </div>
-                  <Badge variant="warning">
+                  <Badge variant="warning" className="shrink-0">
                     {a.currentStock} left (min {a.minStockThreshold})
                   </Badge>
                 </div>
