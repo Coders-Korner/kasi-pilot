@@ -1,0 +1,214 @@
+// TradePulse data model.
+// Target: SQLite for local dev; switch `provider` to "postgresql" for Supabase/production.
+// No enums are used in the DB so the schema is portable between providers; allowed values
+// are enforced with Zod validation at the API layer.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  phone           String    @unique
+  pinHash         String
+  ownerName       String
+  role            String    @default("trader") // trader | admin | distributor | bank
+  businessName    String?
+  businessType    String?
+  location        String?
+  yearsInBusiness Int?
+  isVerified      Boolean   @default(false)
+  status          String    @default("active") // active | suspended
+  sponsorName     String? // e.g. distributor/sponsor label
+  territory       String? // distributor/bank territory
+  createdAt       DateTime  @default(now())
+  lastActiveAt    DateTime?
+  lastLoginAt     DateTime?
+
+  // Consent flags (POPIA-style, per partner type)
+  consentDistributor Boolean @default(false)
+  consentBank        Boolean @default(false)
+  consentEsd         Boolean @default(false)
+  consentUpdatedAt   DateTime?
+
+  // Distributor -> retailers mapping (self-relation)
+  parentPartnerId String?
+  parentPartner   User?  @relation("PartnerTraders", fields: [parentPartnerId], references: [id])
+  retailerUsers   User[] @relation("PartnerTraders")
+
+  products          Product[]
+  transactions      Transaction[]
+  stockMovements    StockMovement[]
+  auditLogs         AuditLog[]
+  consents          Consent[]
+  tickets           SupportTicket[]
+  passports         ReadinessSnapshot[]
+  loansAsTrader     LoanAssessment[]         @relation("LoanTrader")
+  loansAssessed     LoanAssessment[]         @relation("LoanAssessor")
+  promotionsCreated Promotion[]
+  chatMessages      ChatMessage[]
+
+  @@index([role])
+  @@index([parentPartnerId])
+}
+
+model Product {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  category         String   @default("General")
+  currentStock     Int      @default(0)
+  minStockThreshold Int     @default(5)
+  averagePrice     Float    @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  transactions     Transaction[]
+  stockMovements   StockMovement[]
+
+  @@index([userId])
+}
+
+model Transaction {
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type               String // sale | purchase | adjustment
+  productId          String?
+  product            Product? @relation(fields: [productId], references: [id])
+  productName        String
+  quantity           Int
+  unitPrice          Float
+  total              Float
+  timestamp          DateTime @default(now())
+  source             String   @default("chat") // chat | web | sync | webhook
+  rawMessage         String?
+  transcription      String?
+  confidence         Float?
+  status             String   @default("confirmed") // pending | confirmed | corrected
+  externalMessageId  String?  @unique
+  correctedFromId    String?
+  createdAt          DateTime @default(now())
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([externalMessageId])
+}
+
+model StockMovement {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  change     Int // + for purchase/adjustment-in, - for sale/adjustment-out
+  reason     String
+  afterStock Int
+  timestamp  DateTime @default(now())
+
+  @@index([userId])
+  @@index([productId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String // actor
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String // transaction.created | transaction.corrected | login | data_export | consent.change | ...
+  entity    String?
+  entityId  String?
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+}
+
+model Consent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose   String // distributor-sharing | bank-sharing | esd-sharing | marketing
+  granted   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model SupportTicket {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   String
+  message   String
+  status    String   @default("open") // open | in_progress | resolved
+  priority  String   @default("low") // low | medium | high
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+model ReadinessSnapshot {
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodDays         Int      @default(180)
+  totalRevenue       Float
+  totalTransactions  Int
+  avgMonthlyRevenue  Float
+  avgDailyRuns       Int // days with at least one transaction
+  consistencyScore   Float // 0-100
+  revenueTrend       String // "up" | "flat" | "down"
+  stockTurnoverJson  String // JSON map productId -> turnover
+  bestSellingJson    String // JSON array of top products
+  generatedAt        DateTime @default(now())
+
+  @@index([userId])
+}
+
+model LoanAssessment {
+  id           String   @id @default(cuid())
+  traderId     String
+  trader       User     @relation("LoanTrader", fields: [traderId], references: [id], onDelete: Cascade)
+  bankId       String
+  bank         User     @relation("LoanAssessor", fields: [bankId], references: [id])
+  amount       Float
+  termMonths   Int
+  readinessScore Float
+  decision     String   @default("pending") // pending | approved | declined | request_info
+  note         String?
+  createdAt    DateTime @default(now())
+}
+
+model Promotion {
+  id           String   @id @default(cuid())
+  partnerId    String
+  partner      User     @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  title        String
+  product      String
+  discount     String
+  message      String
+  targetCount  Int
+  sentAt       DateTime @default(now())
+}
+
+model ChatMessage {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role          String // user | assistant
+  content       String
+  kind          String   @default("text") // text | transaction | confirmation | error
+  transactionId String?
+  transcription String?
+  engine        String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
