@@ -31,12 +31,16 @@ export function Stat({
   hint,
   icon,
   tone = "default",
+  className,
+  valueClassName,
 }: {
   label: string;
   value: React.ReactNode;
   hint?: React.ReactNode;
   icon?: React.ReactNode;
   tone?: "default" | "success" | "warning" | "destructive";
+  className?: string;
+  valueClassName?: string;
 }) {
   const toneClass = {
     default: "text-foreground",
@@ -45,12 +49,12 @@ export function Stat({
     destructive: "text-destructive",
   }[tone];
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="flex items-center justify-between">
+    <div className={cn("min-w-0 rounded-xl border bg-card p-4 shadow-sm", className)}>
+      <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-        {icon ? <span className="text-muted-foreground">{icon}</span> : null}
+        {icon ? <span className="shrink-0 text-muted-foreground">{icon}</span> : null}
       </div>
-      <p className={cn("mt-2 text-2xl font-bold tabular-nums", toneClass)}>{value}</p>
+      <p className={cn("mt-2 text-2xl font-bold tabular-nums", toneClass, valueClassName)}>{value}</p>
       {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );

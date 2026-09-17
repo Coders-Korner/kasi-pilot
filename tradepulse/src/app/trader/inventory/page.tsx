@@ -72,14 +72,19 @@ export default function InventoryPage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <Stat label="Products" value={data.summary.totalProducts} />
           <Stat
             label="Low stock"
             value={data.summary.lowStock}
             tone={data.summary.lowStock > 0 ? "warning" : "default"}
           />
-          <Stat label="Stock value" value={formatZAR(data.summary.stockValue)} />
+          <Stat
+            label="Stock value"
+            value={formatZAR(data.summary.stockValue)}
+            valueClassName="text-lg break-words sm:text-2xl"
+            className="col-span-2 sm:col-span-1"
+          />
         </div>
 
         <div className="space-y-2">
