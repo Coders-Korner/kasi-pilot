@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { apiGet, apiPost } from "@/lib/client-api";
 import { useOffline } from "@/components/offline-provider";
 import { useSpeech } from "@/components/use-speech";
+import { useVoiceNote } from "@/components/use-voice-note";
 import { enqueueTransaction } from "@/lib/offline";
 import { cn, timeAgo, uid } from "@/lib/utils";
 
@@ -41,6 +42,7 @@ export default function ChatPage() {
   const queryClient = useQueryClient();
   const { online, refreshPending } = useOffline();
   const speech = useSpeech();
+  const voice = useVoiceNote();
   const [text, setText] = useState("");
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const [correcting, setCorrecting] = useState<Message | null>(null);
@@ -63,8 +65,8 @@ export default function ChatPage() {
   }, [messages.length]);
 
   const sendMutation = useMutation({
-    mutationFn: (message: string) =>
-      apiPost<{ userMessage: Message; assistantMessage: Message }>("/api/chat", { text: message }),
+    mutationFn: (payload: { text?: string; audioBase64?: string }) =>
+      apiPost<{ userMessage: Message; assistantMessage: Message }>("/api/chat", payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chat"] });
     },
@@ -146,7 +148,70 @@ export default function ChatPage() {
       return;
     }
 
-    sendMutation.mutate(message);
+    sendMutation.mutate({ text: message });
+  }
+
+  async function handleSendAudio(base64: string) {
+    if (!base64.trim()) {
+      setLocalMessages((m) => [
+        ...m,
+        {
+          id: uid("err-"),
+          role: "assistant",
+          content: "Recording was empty — please try again.",
+          kind: "error",
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      return;
+    }
+
+    if (!online) {
+      setLocalMessages((m) => [
+        ...m,
+        {
+          id: uid("err-"),
+          role: "assistant",
+          content: "You are offline. Voice notes need a connection — reconnect and try again.",
+          kind: "error",
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      return;
+    }
+
+    const optimistic: Message = {
+      id: uid("local-"),
+      role: "user",
+      content: "🎤 Voice note",
+      kind: "text",
+      createdAt: new Date().toISOString(),
+    };
+    setLocalMessages((m) => [...m, optimistic]);
+    sendMutation.mutate({ audioBase64: base64 });
+  }
+
+  function toggleVoiceInput() {
+    if (speech.supported) {
+      if (speech.listening) {
+        speech.stop();
+      } else {
+        speech.start();
+      }
+      return;
+    }
+    if (voice.supported) {
+      if (voice.recording) {
+        void (async () => {
+          const base64 = await voice.stop();
+          if (base64) await handleSendAudio(base64);
+        })();
+      } else {
+        void voice.start();
+      }
+      return;
+    }
+    setText((t) => t || "Voice not supported on this browser — please type.");
   }
 
   function confirmMessage(m: Message) {
@@ -213,6 +278,25 @@ export default function ChatPage() {
                 {speech.transcript || "Listening… speak now"}
               </span>
             </div>
+          ) : voice.recording ? (
+            <div className="mb-2 rounded-xl border border-destructive/40 bg-destructive/10 p-2 text-sm">
+              <Mic className="mr-1 inline h-4 w-4 animate-pulse text-destructive" />
+              <span className="text-muted-foreground">
+                Recording… {voice.elapsed}s — tap the mic again to send
+              </span>
+              <button
+                type="button"
+                className="ml-2 text-xs font-medium text-destructive hover:underline"
+                onClick={voice.cancel}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : null}
+          {voice.error ? (
+            <div className="mb-2 rounded-xl border border-destructive/40 bg-destructive/10 p-2 text-sm text-destructive">
+              {voice.error}
+            </div>
           ) : null}
           <div className="flex items-end gap-2">
             <Input
@@ -228,25 +312,23 @@ export default function ChatPage() {
               className="flex-1"
             />
             <Button
-              variant={speech.listening ? "destructive" : "outline"}
+              variant={speech.listening || voice.recording ? "destructive" : "outline"}
               size="icon"
               type="button"
-              aria-label={speech.listening ? "Stop voice input" : "Start voice input"}
-              onClick={() => {
-                if (!speech.supported) {
-                  setText((t) => t || "Voice not supported on this browser — please type.");
-                  return;
-                }
-                if (speech.listening) {
-                  speech.stop();
-                } else {
-                  speech.start();
-                }
-              }}
-              disabled={!speech.supported && false}
-              title={speech.supported ? "Voice note" : "Voice not supported"}
+              aria-label={
+                speech.listening || voice.recording ? "Stop voice input" : "Start voice input"
+              }
+              onClick={toggleVoiceInput}
+              disabled={!speech.supported && !voice.supported}
+              title={
+                speech.supported || voice.supported ? "Voice note" : "Voice not supported"
+              }
             >
-              {speech.listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              {speech.listening || voice.recording ? (
+                <MicOff className="h-4 w-4" />
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
             </Button>
             <Button
               size="icon"

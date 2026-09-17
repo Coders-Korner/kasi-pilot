@@ -231,6 +231,13 @@ export default function RegisterPage() {
               Log in
             </Link>
           </p>
+          <p className="mt-2 text-center text-xs text-muted-foreground/70">
+            By registering you agree to our{" "}
+            <Link href="/privacy" className="underline hover:text-foreground">
+              privacy notice
+            </Link>
+            .
+          </p>
         </CardContent>
       </Card>
     </div>

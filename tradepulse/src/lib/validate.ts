@@ -29,6 +29,13 @@ export const otpSchema = z.object({
 export const pinVerifySchema = z.object({
   phone: phoneSchema,
   pin: pinSchema,
+  pinTicket: z.string().min(1),
+});
+
+export const mfaChallengeSchema = z.object({
+  phone: phoneSchema,
+  code: z.string().regex(/^\d{6}$/, "Verification code must be 6 digits"),
+  mfaTicket: z.string().min(1),
 });
 
 // ---- Transactions ----

@@ -24,6 +24,8 @@ model User {
   yearsInBusiness Int?
   isVerified      Boolean   @default(false)
   status          String    @default("active") // active | suspended
+  mfaEnabled      Boolean   @default(false) // TOTP second factor (admins)
+  mfaSecret       String? // base32 TOTP secret
   sponsorName     String? // e.g. distributor/sponsor label
   territory       String? // distributor/bank territory
   createdAt       DateTime  @default(now())

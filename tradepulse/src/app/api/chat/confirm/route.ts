@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getActor, jsonError, jsonOk } from "@/lib/api-helpers";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { confirmPending } from "@/lib/transactions";
 import { confirmSchema, correctionSchema } from "@/lib/validate";
 import { correctTransaction } from "@/lib/transactions";
@@ -12,6 +13,16 @@ export async function POST(req: NextRequest) {
   const actor = await getActor();
   if (!actor || actor.role !== "trader") return jsonError("Unauthorized", 401);
   const a = { id: actor.sub, role: actor.role, phone: actor.phone };
+
+  const userRl = enforceRateLimit(req, {
+    label: "chat.confirm",
+    limit: 30,
+    windowMs: 60_000,
+    key: actor.sub,
+  });
+  if (userRl) return userRl;
+  const ipRl = enforceRateLimit(req, { label: "chat.confirm", limit: 120, windowMs: 60_000 });
+  if (ipRl) return ipRl;
 
   let body: unknown;
   try {

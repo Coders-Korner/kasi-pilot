@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input, Label } from "@/components/ui/input";
 import { apiPost } from "@/lib/client-api";
 
-type Step = "phone" | "otp" | "pin";
+type Step = "phone" | "otp" | "pin" | "mfa";
 
 const QUICK = [
   { label: "Trader (Thandi)", phone: "+27821234567", pin: "1234" },
@@ -34,6 +34,9 @@ function LoginForm() {
   const [otp, setOtp] = useState("");
   const [pin, setPin] = useState("");
   const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [pinTicket, setPinTicket] = useState<string | null>(null);
+  const [mfaTicket, setMfaTicket] = useState<string | null>(null);
+  const [mfa, setMfa] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -64,6 +67,7 @@ function LoginForm() {
         { phone, otp }
       );
       if (res.requiresPin) {
+        setPinTicket(res.pinTicket ?? null);
         setStep("pin");
       } else {
         router.push(res.redirect || "/trader/chat");
@@ -81,12 +85,44 @@ function LoginForm() {
     setError("");
     setLoading(true);
     try {
-      const res = await apiPost<{ redirect: string }>("/api/auth/pin", { phone, pin });
-      router.push(res.redirect || "/trader/chat");
-      router.refresh();
+      if (!pinTicket) throw new Error("Your OTP session expired. Please request a new code.");
+      const res = await apiPost<{ mfaRequired?: boolean; mfaTicket?: string; redirect?: string }>("/api/auth/pin", {
+        phone,
+        pin,
+        pinTicket,
+      });
+      if (res.mfaRequired) {
+        setMfaTicket(res.mfaTicket ?? null);
+        setMfa("");
+        setStep("mfa");
+      } else {
+        router.push(res.redirect || "/trader/chat");
+        router.refresh();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Incorrect PIN");
       setPin("");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function verifyMfa(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      if (!mfaTicket) throw new Error("Your MFA session expired. Please log in again.");
+      const res = await apiPost<{ redirect: string }>("/api/auth/mfa", {
+        phone,
+        code: mfa,
+        mfaTicket,
+      });
+      router.push(res.redirect || "/admin");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid code");
+      setMfa("");
     } finally {
       setLoading(false);
     }
@@ -100,14 +136,22 @@ function LoginForm() {
             <LogIn className="h-6 w-6" />
           </div>
           <CardTitle className="text-xl">
-            {step === "phone" ? "Welcome back" : step === "otp" ? "Enter your code" : "Enter your PIN"}
+            {step === "phone"
+              ? "Welcome back"
+              : step === "otp"
+                ? "Enter your code"
+                : step === "pin"
+                  ? "Enter your PIN"
+                  : "Two-factor verification"}
           </CardTitle>
           <CardDescription>
             {step === "phone"
               ? "Log in with your phone number"
               : step === "otp"
                 ? `Code sent to ${phone} (simulated)`
-                : "Two-factor keeps your business records safe"}
+                : step === "pin"
+                  ? "Two-factor keeps your business records safe"
+                  : `Enter the 6-digit code from your authenticator app for ${phone}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -191,7 +235,7 @@ function LoginForm() {
                 <ArrowLeft className="h-4 w-4" /> Change number
               </Button>
             </form>
-          ) : (
+          ) : step === "pin" ? (
             <form onSubmit={verifyPin} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="pin">4-digit PIN</Label>
@@ -213,6 +257,40 @@ function LoginForm() {
                 Log in
               </Button>
             </form>
+          ) : (
+            <form onSubmit={verifyMfa} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="mfa">6-digit authenticator code</Label>
+                <Input
+                  id="mfa"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="000000"
+                  className="text-center text-2xl tracking-[0.5em]"
+                  value={mfa}
+                  onChange={(e) => setMfa(e.target.value.replace(/\D/g, ""))}
+                  autoFocus
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" size="lg" disabled={loading || mfa.length !== 6}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Verify
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setStep("phone");
+                  setMfa("");
+                  setPin("");
+                  setError("");
+                }}
+              >
+                <ArrowLeft className="h-4 w-4" /> Start over
+              </Button>
+            </form>
           )}
 
           <p className="mt-5 text-center text-sm text-muted-foreground">
@@ -220,6 +298,13 @@ function LoginForm() {
             <Link href="/register" className="font-medium text-primary hover:underline">
               Create an account
             </Link>
+          </p>
+          <p className="mt-2 text-center text-xs text-muted-foreground/70">
+            By using TradePulse you agree to our{" "}
+            <Link href="/privacy" className="underline hover:text-foreground">
+              privacy notice
+            </Link>
+            .
           </p>
         </CardContent>
       </Card>

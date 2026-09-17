@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Stat } from "@/components/ui/primitives";
 import { apiGet } from "@/lib/client-api";
+import { ExportButton } from "@/components/export-button";
 import { formatZAR, timeAgo } from "@/lib/utils";
 
 interface DistributorData {
@@ -51,11 +52,14 @@ export default function DistributorOverviewPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold">Route to market</h1>
-        <p className="text-sm text-muted-foreground">
-          Retailers who shared their data with you. All figures are consent-gated and live.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Route to market</h1>
+          <p className="text-sm text-muted-foreground">
+            Retailers who shared their data with you. All figures are consent-gated and live.
+          </p>
+        </div>
+        <ExportButton path="/api/partner/distributor/export" />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

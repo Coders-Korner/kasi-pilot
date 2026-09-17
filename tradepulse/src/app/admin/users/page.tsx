@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, ShieldCheck, ShieldOff } from "lucide-react";
+import { Download, Search, ShieldCheck, ShieldOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
-import { apiGet, apiPatch } from "@/lib/client-api";
+import { apiGet, apiPatch, downloadCsv } from "@/lib/client-api";
 import { formatDate } from "@/lib/utils";
 
 interface AdminUser {
@@ -31,6 +31,7 @@ export default function AdminUsersPage() {
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
   const [q, setQ] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users", role, status, q],
@@ -51,9 +52,28 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Users</h1>
-        <p className="text-sm text-muted-foreground">Manage traders, distributors and banks.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Users</h1>
+          <p className="text-sm text-muted-foreground">Manage traders, distributors and banks.</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={exporting}
+          onClick={() => {
+            const params = new URLSearchParams();
+            if (role) params.set("role", role);
+            if (status) params.set("status", status);
+            if (q) params.set("q", q);
+            setExporting(true);
+            void downloadCsv(`/api/admin/users/export?${params.toString()}`).finally(() =>
+              setExporting(false)
+            );
+          }}
+        >
+          <Download className="h-4 w-4" /> Export CSV
+        </Button>
       </div>
 
       <div className="flex flex-wrap gap-2">

@@ -10,6 +10,7 @@ import {
   LifeBuoy,
   ClipboardCheck,
   Landmark,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   "/bank": LayoutDashboard,
   "/bank/assessments": ClipboardCheck,
   "/bank/portfolio": Landmark,
+  "/admin/settings": Settings,
 };
 
 export function PortalShell({

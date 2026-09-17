@@ -3,6 +3,8 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { handleChatMessage } from "@/lib/chat";
 import { jsonError, jsonOk } from "@/lib/api-helpers";
+import { getSessionSecret } from "@/lib/session";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -18,12 +20,15 @@ const webhookSchema = z.object({
 
 function expectedSignature(body: string): string {
   return crypto
-    .createHmac("sha256", process.env.SESSION_SECRET || "dev-secret-change-me")
+    .createHmac("sha256", getSessionSecret())
     .update(body)
     .digest("hex");
 }
 
 export async function POST(req: NextRequest) {
+  const ipRl = enforceRateLimit(req, { label: "webhook", limit: 120, windowMs: 60_000 });
+  if (ipRl) return ipRl;
+
   const raw = await req.text();
   const signature = req.headers.get("x-tradepulse-signature") || "";
 
@@ -38,6 +43,14 @@ export async function POST(req: NextRequest) {
   } catch {
     return jsonError("Invalid payload");
   }
+
+  const phoneRl = enforceRateLimit(req, {
+    label: "webhook",
+    limit: 60,
+    windowMs: 60_000,
+    key: parsed.phone,
+  });
+  if (phoneRl) return phoneRl;
 
   const user = await prisma.user.findUnique({ where: { phone: parsed.phone } });
   if (!user || user.role !== "trader") return jsonError("Unknown sender", 404);

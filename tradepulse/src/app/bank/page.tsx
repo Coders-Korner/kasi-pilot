@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { Stat } from "@/components/ui/primitives";
 import { apiGet, apiPost } from "@/lib/client-api";
+import { ExportButton } from "@/components/export-button";
 import { formatZAR, timeAgo } from "@/lib/utils";
 
 interface BankTrader {
@@ -54,11 +55,14 @@ export default function BankPipelinePage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold">Funding pipeline</h1>
-        <p className="text-sm text-muted-foreground">
-          Traders who consented to share their TradePulse passport with lenders.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Funding pipeline</h1>
+          <p className="text-sm text-muted-foreground">
+            Traders who consented to share their TradePulse passport with lenders.
+          </p>
+        </div>
+        <ExportButton path="/api/partner/bank/export" />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

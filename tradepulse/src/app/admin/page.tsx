@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Activity, Banknote, Store, Ticket, TrendingUp, Users } from "lucide-react";
+import { Activity, Banknote, Store, Ticket, TrendingUp, Users, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Stat } from "@/components/ui/primitives";
@@ -45,10 +45,34 @@ interface AdminOverview {
   tickets: { id: string; subject: string; status: string; priority: string; createdAt: string }[];
 }
 
+interface AccuracyReport {
+  windowDays: number;
+  counts: {
+    confirmed: number;
+    pending: number;
+    corrected: number;
+    abandoned: number;
+    lowConfidence: number;
+    total: number;
+  };
+  rates: {
+    correctionRate: number;
+    pendingRate: number;
+    abandonedRate: number;
+    lowConfidenceRate: number;
+  };
+  avgConfidence: number | null;
+  engines: { engine: string; count: number }[];
+}
+
 export default function AdminOverviewPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-overview"],
     queryFn: () => apiGet<AdminOverview>("/api/admin/overview"),
+  });
+  const { data: metrics } = useQuery({
+    queryKey: ["admin-metrics"],
+    queryFn: () => apiGet<{ report: AccuracyReport }>("/api/admin/metrics"),
   });
 
   if (isLoading || !data) return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -67,6 +91,46 @@ export default function AdminOverviewPage() {
         <Stat label="Revenue (30d)" value={formatZAR(stats.revenue30d)} hint={`${stats.transactions30d} transactions`} icon={<Banknote className="h-4 w-4" />} />
         <Stat label="Open tickets" value={stats.openTickets} hint="Support queue" icon={<Ticket className="h-4 w-4" />} tone={stats.openTickets > 0 ? "warning" : "default"} />
       </div>
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-primary" />
+            <CardTitle className="text-base">Extraction accuracy (30 days)</CardTitle>
+          </div>
+          {metrics?.report.avgConfidence != null ? (
+            <Badge variant="secondary">
+              Avg confidence {(metrics.report.avgConfidence * 100).toFixed(0)}%
+            </Badge>
+          ) : null}
+        </CardHeader>
+        <CardContent>
+          {!metrics ? (
+            <p className="text-sm text-muted-foreground">Loading metrics…</p>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Stat label="Correction rate" value={`${metrics.report.rates.correctionRate}%`} hint={`${metrics.report.counts.corrected} corrected in window`} tone="warning" />
+                <Stat label="Awaiting confirmation" value={`${metrics.report.rates.pendingRate}%`} hint={`${metrics.report.counts.pending} pending`} />
+                <Stat label="Low confidence" value={`${metrics.report.rates.lowConfidenceRate}%`} hint={`${metrics.report.counts.lowConfidence} of ${metrics.report.counts.total} records`} tone="success" />
+                <Stat label="Unconfirmed (7d+)" value={metrics.report.counts.abandoned} hint="never confirmed" />
+              </div>
+              {metrics.report.engines.length > 0 ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Engine mix:
+                  </span>
+                  {metrics.report.engines.map((e) => (
+                    <Badge key={e.engine} variant="secondary">
+                      {e.engine} · {e.count}
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="flex-row items-center gap-2 space-y-0 pb-2">

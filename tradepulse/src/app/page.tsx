@@ -246,7 +246,10 @@ export default async function LandingPage() {
 
       <footer className="border-t py-8 text-center text-xs text-muted-foreground">
         TradePulse — hackathon MVP. Recorded data is used to demonstrate trader-readiness
-        assessment and is not a formal credit report.
+        assessment and is not a formal credit report.{" "}
+        <Link href="/privacy" className="underline hover:text-foreground">
+          Privacy notice
+        </Link>
       </footer>
     </div>
   );

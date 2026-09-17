@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getActor, jsonError, jsonOk } from "@/lib/api-helpers";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { syncBatchSchema } from "@/lib/validate";
 import { commitTransaction } from "@/lib/transactions";
 import { logAudit } from "@/lib/audit";
@@ -11,6 +12,16 @@ export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   const actor = await getActor();
   if (!actor || actor.role !== "trader") return jsonError("Unauthorized", 401);
+
+  const userRl = enforceRateLimit(req, {
+    label: "sync",
+    limit: 60,
+    windowMs: 60_000,
+    key: actor.sub,
+  });
+  if (userRl) return userRl;
+  const ipRl = enforceRateLimit(req, { label: "sync", limit: 300, windowMs: 60_000 });
+  if (ipRl) return ipRl;
 
   let body: unknown;
   try {

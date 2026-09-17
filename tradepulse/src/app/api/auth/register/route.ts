@@ -3,10 +3,14 @@ import bcrypt from "bcryptjs";
 import { registerSchema } from "@/lib/validate";
 import { prisma } from "@/lib/prisma";
 import { createOtp, getDevOtp } from "@/lib/otp";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { jsonError, jsonOk } from "@/lib/api-helpers";
 import { logAudit } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
+  const rl = enforceRateLimit(req, { label: "auth.register", limit: 10, windowMs: 60_000 });
+  if (rl) return rl;
+
   let body: unknown;
   try {
     body = await req.json();

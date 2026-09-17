@@ -1,13 +1,45 @@
 import { cookies } from "next/headers";
 import { verifyToken, signSession, SESSION_COOKIE, type SessionPayload } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 
 export type ActorSession = SessionPayload & { id: string };
+
+// Absolute session lifetime is 24h (JWT exp). On top of that, admins get an
+// inactivity logout even while the JWT is still valid — see Threat modelling:
+// "administrative sessions must expire after a period of inactivity".
+export const ADMIN_INACTIVITY_MS = 30 * 60 * 1000;
+const ACTIVE_TOUCH_MS = 60 * 1000;
 
 export async function getActor(): Promise<ActorSession | null> {
   const token = cookies().get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const session = await verifyToken(token);
   if (!session) return null;
+
+  // Re-validate against the DB on every protected API call: catches suspended
+  // users and role changes, and enforces the admin inactivity window.
+  const user = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { id: true, role: true, phone: true, status: true, lastActiveAt: true },
+  });
+  if (!user || user.status !== "active" || user.role !== session.role) return null;
+
+  if (user.role === "admin") {
+    if (
+      user.lastActiveAt &&
+      Date.now() - user.lastActiveAt.getTime() > ADMIN_INACTIVITY_MS
+    ) {
+      return null;
+    }
+  }
+
+  const now = Date.now();
+  if (!user.lastActiveAt || now - user.lastActiveAt.getTime() > ACTIVE_TOUCH_MS) {
+    await prisma.user
+      .update({ where: { id: user.id }, data: { lastActiveAt: new Date() } })
+      .catch(() => {});
+  }
+
   return { ...session, id: session.sub };
 }
 

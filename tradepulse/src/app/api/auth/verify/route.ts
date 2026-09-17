@@ -1,8 +1,10 @@
 import { NextRequest } from "next/server";
 import { otpSchema } from "@/lib/validate";
 import { prisma } from "@/lib/prisma";
-import { verifyOtp } from "@/lib/otp";
+import { verifyOtp, isOtpLocked, recordOtpFailure } from "@/lib/otp";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { createSessionCookie } from "@/lib/api-helpers";
+import { signAuthChallenge } from "@/lib/session";
 import { jsonError, jsonOk } from "@/lib/api-helpers";
 import { ROLE_HOME } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
@@ -20,10 +22,27 @@ export async function POST(req: NextRequest) {
   const parsed = otpSchema.safeParse(body);
   if (!parsed.success) return jsonError(parsed.error.issues[0]?.message ?? "Invalid input");
 
+  const ipRl = enforceRateLimit(req, {
+    label: "auth.verify",
+    limit: 20,
+    windowMs: 60_000,
+    key: parsed.data.phone,
+    keyLimit: 10,
+  });
+  if (ipRl) return ipRl;
+
   const user = await prisma.user.findUnique({ where: { phone: parsed.data.phone } });
   if (!user) return jsonError("Unknown phone", 404);
 
-  if (!verifyOtp(user.phone, parsed.data.otp)) return jsonError("Invalid or expired OTP", 401);
+  if (isOtpLocked(user.phone)) return jsonError("Too many attempts. Try again in 15 minutes.", 429);
+
+  if (!verifyOtp(user.phone, parsed.data.otp)) {
+    recordOtpFailure(user.phone);
+    if (isOtpLocked(user.phone)) {
+      return jsonError("Too many attempts. Try again in 15 minutes.", 429);
+    }
+    return jsonError("Invalid or expired OTP", 401);
+  }
 
   if (!user.isVerified) {
     await prisma.user.update({
@@ -38,12 +57,6 @@ export async function POST(req: NextRequest) {
     return jsonOk({ ok: true, registered: true, redirect: ROLE_HOME[user.role] || "/trader/chat" });
   }
 
-  const pinTicket = createPinTicket(user.phone);
+  const pinTicket = await signAuthChallenge("pin", { sub: user.id, phone: user.phone });
   return jsonOk({ ok: true, requiresPin: true, pinTicket });
-}
-
-function createPinTicket(phone: string): string {
-  return Buffer.from(
-    JSON.stringify({ phone, exp: Date.now() + 2 * 60 * 1000 })
-  ).toString("base64");
 }
